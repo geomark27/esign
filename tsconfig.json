@@ -1,0 +1,38 @@
+{
+    "compilerOptions": {
+        "jsxImportSource": "react",
+        "types": ["node", "react", "react-dom"],
+        "target": "ESNext",
+        "lib": ["DOM", "DOM.Iterable", "ES6", "ESNext"],
+        "allowJs": true,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "forceConsistentCasingInFileNames": true,
+        "noFallthroughCasesInSwitch": true,
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true,
+        "jsx": "react-jsx",
+        "noImplicitAny": true,
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./resources/js/*"],
+            "ziggy-js": ["./vendor/tightenco/ziggy"]
+        }
+    },
+    "include": [
+        "resources/js/**/*.ts",
+        "resources/js/**/*.d.ts", 
+        "resources/js/**/*.tsx"
+    ],
+    "exclude": [
+        "node_modules",
+        "vendor",
+        "public",
+        "bootstrap"
+    ]
+}
