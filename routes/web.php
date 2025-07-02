@@ -8,7 +8,7 @@ use App\Http\Controllers\User\CertificationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/login', function () {
+Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('dashboard');
     }

@@ -662,6 +662,9 @@ export default function CreateCertification({
                                 value={data.referenceTransaction}
                                 onChange={(e) => setData('referenceTransaction', e.target.value)}
                             />
+                                <p className="text-xs text-gray-500 italic">
+                                    El número de referencia se asignará al completar el proceso.
+                                </p>
                             {(errors.referenceTransaction || stepErrors.referenceTransaction) && <p className="text-sm text-red-500">{errors.referenceTransaction || stepErrors.referenceTransaction}</p>}
                         </div>
 

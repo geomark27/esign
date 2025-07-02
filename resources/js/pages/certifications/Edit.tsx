@@ -628,6 +628,7 @@ export default function EditCertification({
                                         id="referenceTransaction"
                                         value={data.referenceTransaction}
                                         onChange={e => setData('referenceTransaction', e.target.value)}
+                                        readOnly
                                         placeholder="RT-001"
                                         maxLength={150}
                                     />

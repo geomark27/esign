@@ -93,12 +93,15 @@ class CertificationController extends Controller
                 'appointmentExpirationDate' => $request->appointmentExpirationDate,
                 'documentType'              => 'CI',
                 'applicationType'           => $request->applicationType,
-                'referenceTransaction'      => $request->referenceTransaction,
+                'referenceTransaction'      => '',
                 'period'                    => $request->period,
                 'terms_accepted'            => $request->boolean('terms_accepted'),
                 'ip_address'                => $request->ip(),
                 'user_agent'                => $request->userAgent(),
             ]);
+
+            $certification->referenceTransaction = $certification->certification_number;
+            $certification->save();
 
             // Manejar archivos
             $this->handleFileUploads($request, $certification);
@@ -236,10 +239,13 @@ class CertificationController extends Controller
                 'companySocialReason'       => $request->companySocialReason,
                 'appointmentExpirationDate' => $request->appointmentExpirationDate,
                 'applicationType'           => $request->applicationType,
-                'referenceTransaction'      => $request->referenceTransaction,
+                'referenceTransaction'      => '',
                 'period'                    => $request->period,
                 'terms_accepted'            => $request->boolean('terms_accepted'),
             ]);
+
+            $certification->referenceTransaction = $certification->certification_number;
+            $certification->save();
 
             // ✅ Solo subir archivos nuevos
             $this->handleFileUploads($request, $certification);
@@ -491,7 +497,7 @@ class CertificationController extends Controller
             'province'                  => 'required|string|in:'.implode(',', Certification::PROVINCES),
             'address'                   => 'required|string|min:15|max:100',
             'applicationType'           => 'required|in:NATURAL_PERSON,LEGAL_REPRESENTATIVE',
-            'referenceTransaction'      => 'required|string|max:150',
+            'referenceTransaction'      => 'nullable|string|max:150',
             'period'                    => 'required|in:ONE_WEEK,ONE_MONTH,ONE_YEAR,TWO_YEARS,THREE_YEARS,FOUR_YEARS,FIVE_YEARS',
             'terms_accepted'            => 'required|accepted',
             'identificationFront'       => 'required|file|mimes:jpg,png|max:5120',
@@ -634,7 +640,7 @@ class CertificationController extends Controller
             'province'                  => 'required|string|in:'.implode(',', Certification::PROVINCES),
             'address'                   => 'required|string|min:15|max:100',
             'applicationType'           => 'required|in:NATURAL_PERSON,LEGAL_REPRESENTATIVE',
-            'referenceTransaction'      => 'required|string|max:150',
+            'referenceTransaction'      => 'nullable|string|max:150',
             'period'                    => 'required|in:ONE_WEEK,ONE_MONTH,ONE_YEAR,TWO_YEARS,THREE_YEARS,FOUR_YEARS,FIVE_YEARS',
             'terms_accepted'            => 'required|accepted',
             'dateOfBirth'               => 'required|date|before:today',
