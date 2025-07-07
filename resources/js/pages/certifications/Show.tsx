@@ -89,6 +89,7 @@ export default function ShowCertification({
             router.delete(route('user.certifications.destroy', certification.id), {
                 onFinish: () => setIsDeleting(false)
             });
+            
         }
     };
 
