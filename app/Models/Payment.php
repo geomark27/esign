@@ -41,10 +41,10 @@ class Payment extends Model
         'payment_date'  => 'datetime',
     ];
 
-    const STATUS_PENDING = 'pending';
-    const STATUS_VERIFIED = 'verified';
-    const STATUS_REJECTED = 'rejected';
-    const STATUS_VOIDED = 'voided';
+    const STATUS_PENDING    = 'pending';
+    const STATUS_VERIFIED   = 'verified';
+    const STATUS_REJECTED   = 'rejected';
+    const STATUS_VOIDED     = 'voided';
 
     const STATUS_OPTIONS = [
         self::STATUS_PENDING    => 'Pendiente',

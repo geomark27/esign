@@ -1,0 +1,1 @@
+import{j as m}from"./app-DXl8iYFA.js";import{A as s}from"./auth-simple-layout-CEUyfQuq.js";function p({children:t,title:o,description:r,...u}){return m.jsx(s,{title:o,description:r,...u,children:t})}export{p as A};

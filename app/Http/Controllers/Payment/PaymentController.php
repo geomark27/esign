@@ -69,9 +69,9 @@ class PaymentController extends Controller
     {
         // Validación común para todos los tipos de pago
         $request->validate([
-            'certification_id' => 'required|exists:certifications,id',
-            'amount' => 'required|numeric|min:0.01',
-            'payment_method_code' => 'required|string|exists:payment_methods,name',
+            'certification_id'      => 'required|exists:certifications,id',
+            'amount'                => 'required|numeric|min:0.01',
+            'payment_method_code'   => 'required|string|exists:payment_methods,name',
         ]);
 
         try {

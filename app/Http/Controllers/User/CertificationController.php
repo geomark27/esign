@@ -4,8 +4,10 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Certification;
+use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Services\FirmaSeguraService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -66,6 +68,7 @@ class CertificationController extends Controller
      */
     public function store(Request $request)
     {
+          //dd($request->allFiles());
         $rules   = $this->getValidationRules($request->applicationType ?? 'NATURAL_PERSON');
         $messages = $this->getValidationMessages();
         $request->validate($rules, $messages);
@@ -158,7 +161,7 @@ class CertificationController extends Controller
             'applicationTypes'  => Certification::APPLICATION_TYPES,
             'periods'           => Certification::PERIODS,
             'canEdit'           => $this->canEditByValidationStatus($certification),
-            'canDelete'         => $certification->validationStatus === 'REGISTERED',
+            'canDelete'         => $certification->status === 'draft',
             'canSubmit'         => $certification->status === 'draft' && $this->isCompleteCertification($certification),
             'hasCompanyDocs'    => $certification->applicationType === 'LEGAL_REPRESENTATIVE' || 
                             ($certification->applicationType === 'NATURAL_PERSON' && !empty($certification->companyRuc)),
@@ -281,46 +284,41 @@ class CertificationController extends Controller
     {
         $this->validateRole($certification);
 
-        
-        // Verificar que se puede enviar
-        if (!$certification->canBeSubmitted()) {
+        // 1) Pago verificado
+        /* if (! $certification->payments()
+                            ->where('status', Payment::STATUS_VERIFIED)
+                            ->exists()
+        ) {
             return redirect()
                 ->route('user.certifications.show', $certification)
-                ->with('error', 'La certificación no está completa o no se puede enviar en su estado actual.');
-        }
+                ->with('error', 'Para enviar la certificación debe existir un pago verificado y no puede haber sólo pagos pendientes.');
+        } */
 
-        // Verificar que no esté ya procesándose
-        if (in_array($certification->validationStatus, ['VALIDATING', 'APPROVED', 'GENERATED'])) {
+        // 2) Certificación completa
+        if (! $certification->canBeSubmitted()) {
             return redirect()
                 ->route('user.certifications.show', $certification)
-                ->with('warning', 'Esta certificación ya está siendo procesada por FirmaSegura.');
+                ->with('error', 'La certificación no está completa o no puede enviarse en su estado actual.');
         }
 
         try {
-            // Enviar a FirmaSegura usando el servicio
             $result = $firmaSeguraService->submitCertification($certification);
 
             if ($result['success']) {
-                // Éxito
                 return redirect()
                     ->route('user.certifications.show', $certification)
-                    ->with('success', 'Certificación enviada exitosamente a FirmaSegura para procesamiento.');
-            } else {
-                // Error controlado
-                return redirect()
-                    ->route('user.certifications.show', $certification)
-                    ->with('error', $result['message'])
-                    ->with('error_details', $result['error_details'] ?? null);
+                    ->with('success', 'Certificación enviada exitosamente a FirmaSegura.');
             }
 
-        } catch (\Exception $e) {
-            // Error inesperado
-            Log::channel('debugging')->error('Error inesperado en submit de certificación', [
+            return redirect()
+                ->route('user.certifications.show', $certification)
+                ->with('error', $result['message'])
+                ->with('error_details', $result['error_details'] ?? null);
+
+        } catch (\Throwable $th) {
+            Log::channel('debugging')->error('Error inesperado al enviar certificación', [
                 'certification_id' => $certification->id,
-                'user_id'   => auth()->id(),
-                'error'     => $e->getMessage(),
-                'file'      => $e->getFile(),
-                'line'      => $e->getLine()
+                'error'            => $th->getMessage(),
             ]);
 
             return redirect()
@@ -328,6 +326,7 @@ class CertificationController extends Controller
                 ->with('error', 'Ocurrió un error inesperado. Por favor, intente nuevamente.');
         }
     }
+
 
     /**
      * Consultar estado actualizado de la certificación en FirmaSegura
@@ -525,6 +524,7 @@ class CertificationController extends Controller
                 'pdfRepresentativeAppointment' => 'required|file|mimes:pdf|max:10240',
                 'pdfAppointmentAcceptance'     => 'required|file|mimes:pdf|max:10240',
                 'pdfCompanyConstitution'       => 'required|file|mimes:pdf|max:10240',
+                'authorizationVideo'            => 'required|file|mimes:mp4|max:10240',
             ]);
         }
 
@@ -557,7 +557,7 @@ class CertificationController extends Controller
      */
     private function canEditByValidationStatus(Certification $certification): bool
     {
-        return in_array($certification->validationStatus, ['REGISTERED']);
+        return in_array($certification->status, ['draft', 'pending']);
     }
 
     /**

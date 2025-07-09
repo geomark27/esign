@@ -1,4 +1,3 @@
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +7,11 @@ import { useBreadcrumbs } from '@/hooks/use-breadcrumbs';
 import AppLayout from '@/layouts/app-layout';
 import { PaymentMethod, type Certification, type PageProps } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import {
+    Alert,
+    AlertTitle,
+    AlertDescription,
+} from '@/components/ui/alert';
 import { 
     AlertCircle,
     ArrowLeft, 
@@ -66,47 +70,59 @@ export default function ShowCertification({
 }: ShowCertificationProps) {
     const { userBreadcrumbs } = useBreadcrumbs();
     const breadcrumbs = userBreadcrumbs.certifications.show(certification.certification_number);
-    
-    const [isDeleting, setIsDeleting] = useState(false);
+    const { flash } = usePage<ShowCertificationProps>().props;
+
+    const [isDeleting, setIsDeleting]     = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
-
-    const { props: { flash } } = usePage<ShowCertificationProps>();
-
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);  
+    // --- MODIFICACIÓN 1: Actualizar useEffect para manejar el estado de la alerta ---
     useEffect(() => {
+        // Limpiar mensaje de alerta anterior en cada render nuevo
+        setAlertMessage(null);
+        
         if (flash?.success) {
             toast.success(flash.success as string);
         }
         if (flash?.error) {
-            toast.error(flash.error as string);
+            toast.error(flash.error as string); // Opcional: mantener el toast además de la alerta
+                    setAlertMessage(flash.error as string); // Establecer el mensaje para el componente Alert
         }
     }, [flash]);
 
     const handleDelete = () => {
         if (confirm('¿Estás seguro de que deseas eliminar esta certificación? Esta acción no se puede deshacer.')) {
             setIsDeleting(true);
-            // --- CORRECCIÓN 2: Pasar las opciones como tercer argumento ---
-            router.delete(route('user.certifications.destroy', certification.id), {
+            router.delete(route('user.certifications.destroy', certification.id), 
+            {
                 onFinish: () => setIsDeleting(false)
             });
-            
         }
     };
 
+    // --- MODIFICACIÓN 2: Simplificar handleSubmit ---
+    // Se elimina la lógica de `onError` y `onSuccess` que manejaba mensajes.
+    // La respuesta (éxito o error) ahora es gestionada exclusivamente por el `useEffect`
+    // que lee los `flash messages` de la redirección.
     const handleSubmit = () => {
-        if (confirm('¿Estás seguro de que deseas enviar esta certificación para revisión? Ya no podrás editarla.')) {
-            setIsSubmitting(true);
-            // --- CORRECCIÓN 2: Pasar las opciones como tercer argumento ---
-            router.post(route('user.certifications.submit', certification.id), {}, {
-                onFinish: () => setIsSubmitting(false)
-            });
+        if (!confirm("¿Estás seguro de que deseas enviar esta certificación para revisión?")) {
+            return;
         }
+        
+        setIsSubmitting(true);
+
+        router.post(
+            route("user.certifications.submit", certification.id),
+            {},
+            {
+                onFinish: () => setIsSubmitting(false),
+            }
+        );
     };
 
     const handleRefreshStatus = () => {
         if (confirm('¿Consultar el estado actualizado en FirmaSegura?')) {
             setIsRefreshing(true);
-            // --- CORRECCIÓN 2: Pasar las opciones como tercer argumento ---
             router.post(route('user.certifications.refresh-status', certification.id), {}, {
                 preserveScroll: true,
                 onFinish: () => setIsRefreshing(false)
@@ -116,21 +132,12 @@ export default function ShowCertification({
 
     const getStatusBadge = (status: string, options: Record<string, string>) => {
         const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-            'draft': 'outline',
-            'pending': 'secondary',
-            'in_review': 'default',
-            'approved': 'default',
-            'rejected': 'destructive',
-            'completed': 'default',
-            'REGISTERED': 'outline',
-            'VALIDATING': 'secondary',
-            'REFUSED': 'destructive',
-            'ERROR': 'destructive',
-            'APPROVED': 'default',
-            'GENERATED': 'default',
+            'draft': 'outline', 'pending': 'secondary', 'in_review': 'default',
+            'approved': 'default', 'rejected': 'destructive', 'completed': 'default',
+            'REGISTERED': 'outline', 'VALIDATING': 'secondary', 'REFUSED': 'destructive',
+            'ERROR': 'destructive', 'APPROVED': 'default', 'GENERATED': 'default',
             'EXPIRED': 'destructive',
         };
-
         return (
             <Badge variant={variants[status] || 'outline'}>
                 {options[status] || status}
@@ -140,21 +147,14 @@ export default function ShowCertification({
 
     const getStatusIcon = (status: string) => {
         const icons: Record<string, JSX.Element> = {
-            'draft': <Clock className="h-4 w-4" />,
-            'pending': <AlertCircle className="h-4 w-4" />,
-            'in_review': <Eye className="h-4 w-4" />,
-            'approved': <CheckCircle className="h-4 w-4" />,
-            'rejected': <XCircle className="h-4 w-4" />,
-            'completed': <CheckCircle className="h-4 w-4" />,
-            'REGISTERED': <Clock className="h-4 w-4" />,
-            'VALIDATING': <Eye className="h-4 w-4" />,
-            'REFUSED': <XCircle className="h-4 w-4" />,
-            'ERROR': <AlertCircle className="h-4 w-4" />,
-            'APPROVED': <CheckCircle className="h-4 w-4" />,
-            'GENERATED': <CheckCircle className="h-4 w-4" />,
+            'draft': <Clock className="h-4 w-4" />, 'pending': <AlertCircle className="h-4 w-4" />,
+            'in_review': <Eye className="h-4 w-4" />, 'approved': <CheckCircle className="h-4 w-4" />,
+            'rejected': <XCircle className="h-4 w-4" />, 'completed': <CheckCircle className="h-4 w-4" />,
+            'REGISTERED': <Clock className="h-4 w-4" />, 'VALIDATING': <Eye className="h-4 w-4" />,
+            'REFUSED': <XCircle className="h-4 w-4" />, 'ERROR': <AlertCircle className="h-4 w-4" />,
+            'APPROVED': <CheckCircle className="h-4 w-4" />, 'GENERATED': <CheckCircle className="h-4 w-4" />,
             'EXPIRED': <XCircle className="h-4 w-4" />,
         };
-
         return icons[status] || <Clock className="h-4 w-4" />;
     };
 
@@ -163,7 +163,7 @@ export default function ShowCertification({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Certificación #${certification.certification_number}`} />
-            
+
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -195,7 +195,7 @@ export default function ShowCertification({
                         </Button>
                         )}
 
-                        <PaymentModal
+                        {/* <PaymentModal
                             certificationId={id}
                             methods={paymentMethods}
                             onSuccess={refreshPage}
@@ -204,7 +204,7 @@ export default function ShowCertification({
                                 <DollarSign className="h-4 w-4" />
                                 Registrar Pago
                             </Button>
-                        </PaymentModal>
+                        </PaymentModal> */}
 
                         {certification.status !== 'draft' && (
                         <Button
@@ -242,6 +242,17 @@ export default function ShowCertification({
 
                 </div>
 
+               {/* --- MODIFICACIÓN 3: Renderizar la alerta de error si existe --- */}
+                {alertMessage && (
+                    <Alert variant="destructive" className="my-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Acción Requerida</AlertTitle>
+                        <AlertDescription>
+                            {alertMessage}
+                        </AlertDescription>
+                    </Alert>
+                )}
+                
                 {/* Estados */}
                 <Card>
                     <CardHeader>
@@ -513,7 +524,6 @@ export default function ShowCertification({
                     </Card>
                 </div>
             </div>
-
         </AppLayout>
     );
 }

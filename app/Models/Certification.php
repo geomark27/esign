@@ -122,7 +122,7 @@ class Certification extends Model
         'Quito', 'Guayaquil', 'Cuenca', 'Santo Domingo', 'Machala',
         'Durán', 'Manta', 'Portoviejo', 'Loja', 'Ambato', 'Esmeraldas',
         'Quevedo', 'Riobamba', 'Milagro', 'Ibarra', 'Babahoyo',
-        'La Libertad', 'Daule', 'Quinindé', 'Ventanas', 'Cayambe'
+        'La Libertad', 'Daule', 'Quinindé', 'Ventanas', 'Cayambe', 'Caluma'
     ];
 
     const PROVINCES = [
@@ -523,5 +523,13 @@ class Certification extends Model
                 'last_status_check' => now()->toISOString()
             ])
         ]);
+    }
+
+    /**
+     * Relación: todos los pagos de esta certificación.
+     */
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
     }
 }
