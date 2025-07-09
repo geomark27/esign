@@ -524,7 +524,6 @@ class CertificationController extends Controller
                 'pdfRepresentativeAppointment' => 'required|file|mimes:pdf|max:10240',
                 'pdfAppointmentAcceptance'     => 'required|file|mimes:pdf|max:10240',
                 'pdfCompanyConstitution'       => 'required|file|mimes:pdf|max:10240',
-                'authorizationVideo'            => 'required|file|mimes:mp4|max:10240',
             ]);
         }
 
