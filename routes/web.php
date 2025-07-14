@@ -2,10 +2,14 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\SignatureController;
 use App\Http\Controllers\Admin\RoleController;  // ← Agregar esta línea
+use App\Http\Controllers\Payment\PaymentController;
 use App\Http\Controllers\Settings\GeneralController;
 use App\Http\Controllers\User\DashboardController as UserDashboardController;
 use App\Http\Controllers\User\CertificationController;
+use App\Models\Payment;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -61,6 +65,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         // Estadísticas de rol (opcional - para futuro)
         Route::get('roles/{role}/stats', [RoleController::class, 'stats'])->name('roles.stats');
+
+        Route::get('signatures', [SignatureController::class, 'index'])->name('signatures.index');
+        Route::post('signatures', [SignatureController::class, 'store'])->name('signatures.store');
+        Route::get('signatures/{plan}/edit', [SignatureController::class, 'edit'])->name('signatures.edit');
+        Route::put('signatures/{plan}', [SignatureController::class, 'update'])->name('signatures.update');
+        Route::put('signatures/change/status/{plan}', [SignatureController::class, 'changeStatus'])->name('signatures.change.status');
+
+
+        Route::get('reports/payments', [ReportController::class, 'paymentReport'])->name('reports.payments'); 
+        Route::get('reports/signatures', [ReportController::class, 'signatureReport'])->name('reports.signatures'); 
+
+        Route::get('reports/export/payments', [ReportController::class, 'exportPayments'])->name('reports.export.payments'); 
+        Route::get('reports/signatures/export', [ReportController::class, 'exportSignatures'])->name('reports.signatures.export');
+        
     });
 
     // Rutas para USER
@@ -84,6 +102,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('certifications/{certification}/submit', [CertificationController::class, 'submit'])->name('certifications.submit');
         Route::post('certifications/{certification}/refresh-status', [CertificationController::class, 'refreshStatus'])->name('certifications.refresh-status');
         Route::delete('certifications/{certification}', [CertificationController::class, 'destroy'])->name('certifications.destroy');
+
+        Route::post('certifications/payments/store', [PaymentController::class, 'store'])->name('certifications.payments.store');
+        Route::delete('certifications/payments/{certification_id}/destroy', [PaymentController::class, 'destroy'])->name('certifications.payments.destroy');
     });
 
     Route::prefix('settings')->name('settings.')->group(function () {

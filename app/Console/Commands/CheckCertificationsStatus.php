@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Log;
 
 class CheckCertificationsStatus extends Command
 {
-    protected $signature   = 'check:certification-status';
-    protected $description = 'Consulta en FirmaSegura el estado de las certificaciones pendientes o en revisión';
+    protected $signature    = 'check:certification-status';
+    protected $description  = 'Consulta en FirmaSegura el estado de las certificaciones pendientes o en revisión';
 
     protected FirmaSeguraService $firmaSegura;
 

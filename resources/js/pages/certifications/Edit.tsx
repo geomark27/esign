@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useBreadcrumbs } from '@/hooks/use-breadcrumbs';
 import AppLayout from '@/layouts/app-layout';
-import { type Certification, type PageProps } from '@/types';
+import { Signature, type Certification, type PageProps } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { 
     ArrowLeft, 
@@ -34,7 +34,7 @@ interface EditCertificationProps extends PageProps {
         is_over_65?: boolean;
     };
     applicationTypes: Record<string, string>;
-    periods: Record<string, string>;
+    periods: Signature[]; // Usar el tipo Signature en lugar de Array<any>
     cities: string[];
     provinces: string[];
     statusOptions: Record<string, string>;
@@ -610,9 +610,12 @@ export default function EditCertification({
                                                 <SelectValue placeholder="Seleccionar período" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {Object.entries(periods).map(([key, value]) => (
-                                                    <SelectItem key={key} value={key}>
-                                                        {value}
+                                                {periods.map((plan) => (
+                                                    <SelectItem 
+                                                        key={plan.id}
+                                                        value={plan.period}
+                                                    >
+                                                        {plan.display_name} - ${plan.price}  
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>

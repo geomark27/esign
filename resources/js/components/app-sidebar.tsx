@@ -1,4 +1,5 @@
-// resources/js/components/app-sidebar.tsx - Convertido a navbar horizontal
+// resources/js/components/app-sidebar.tsx - Con estilo de botón unificado
+
 import { useState } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
@@ -17,24 +18,16 @@ import {
     DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { 
+    Collapsible, 
+    CollapsibleContent, 
+    CollapsibleTrigger 
+} from '@/components/ui/collapsible';
 import { type NavItem } from '@/types';
-import { BookOpen, Folder, LayoutGrid, Users, Shield, Menu, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Users, Shield, Menu, Settings, LogOut, ChevronDown, Book, List, Receipt, ChevronsUpDown, Banknote, ReceiptCent, ReceiptCentIcon, Handshake, File, DoorClosed, FileLock, Lock, ListCheck, Pen, PenLine, UserCheck, UserCog2, Users2, Users2Icon, LockKeyholeIcon, ListTodo, PenBoxIcon } from 'lucide-react';
 import { route } from 'ziggy-js';
 import { cn } from '@/lib/utils';
 import AppLogo from './app-logo';
-
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#c',
-        icon: BookOpen,
-    },
-];
 
 export function AppSidebar() {
     const page = usePage();
@@ -42,26 +35,27 @@ export function AppSidebar() {
     const user = auth.user;
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    // Obtener URL actual de forma más robusta
     const currentUrl = page.url || window.location.pathname || '';
     
-    // Función para verificar si una ruta está activa
-    const isActiveRoute = (href: string): boolean => {
-        // Verificar que currentUrl existe antes de usar métodos de string
+    const isActiveRoute = (item: NavItem): boolean => {
         if (!currentUrl || typeof currentUrl !== 'string') {
             return false;
         }
         
-        // Para dashboard, verificar rutas exactas
-        if (href === '/dashboard') {
-            return currentUrl === '/dashboard' || currentUrl === '/' || currentUrl === '';
+        if (item.children && item.children.length > 0) {
+            return item.children.some(child => child.href && currentUrl.startsWith(child.href));
         }
         
-        // Para otras rutas, verificar que empiece con la ruta
-        return currentUrl.startsWith(href);
+        if (item.href) {
+            if (item.href === '/dashboard') {
+                return currentUrl === '/dashboard' || currentUrl === '/' || currentUrl === '';
+            }
+            return currentUrl.startsWith(item.href);
+        }
+
+        return false;
     };
 
-    // Navegación base (todos los usuarios autenticados)
     const baseNavItems: NavItem[] = [
         {
             title: 'Dashboard',
@@ -70,37 +64,67 @@ export function AppSidebar() {
         },
     ];
 
-    // Navegación de administrador
     const adminNavItems: NavItem[] = [
         {
-            title: 'Gestión de Usuarios',
-            href: '/admin/users',
-            icon: Users,
+            title: 'Personas',
+            icon: Users2Icon,
+            children:[
+                {
+                    title: 'Usuarios',
+                    href: '/admin/users',
+                    icon: UserCog2,
+                },
+                {
+                    title: 'Roles',
+                    href: '/admin/roles',
+                    icon: LockKeyholeIcon,
+                },
+            ]
         },
         {
-            title: 'Gestión de Roles',
-            href: '/admin/roles',
-            icon: Shield,
+            title: 'Planes',
+            icon: ListTodo,
+            children:[
+                {
+                    title: 'Firmas',
+                    href: '/admin/signatures',
+                    icon: PenBoxIcon,
+                },
+            ]
+        },
+        {
+            title: 'Informes',
+            icon: List,
+            children: [
+                {
+                    title: 'Informe de pagos',
+                    href: '/admin/reports/payments',
+                    icon: null,
+                },
+                {
+                    title: 'Informe de firmas',
+                    href: '/admin/reports/signatures',
+                    icon: null,
+                },
+            ],
         },
     ];
 
-    const clientNavItems: NavItem[] = [
+    const userNavItems: NavItem[] = [
         {
-            title: 'Gestionar certificados',
+            title: 'Certificados',
             href: '/user/certifications',
-            icon: Shield,
+            icon: BookOpen,
         },
     ];
 
-    // Determinar elementos de navegación según permisos
     const getNavItems = (): NavItem[] => {
         let navItems = [...baseNavItems];
 
-        // Si es admin, agregar elementos de administración
         if (user?.roles?.some((role: any) => role.name === 'admin')) {
             navItems.push(...adminNavItems);
         } else {
-            navItems.push(...clientNavItems);
+            navItems.push(...userNavItems);
         }
 
         return navItems;
@@ -110,7 +134,6 @@ export function AppSidebar() {
 
     const handleLogout = () => {
         if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-            // Usar router de Inertia para logout
             router.post(route('logout'));
         }
     };
@@ -130,26 +153,46 @@ export function AppSidebar() {
                     <NavigationMenuList>
                         {mainNavItems.map((item) => (
                             <NavigationMenuItem key={item.title}>
-                                <NavigationMenuLink 
-                                    asChild
-                                    className={cn(
-                                        "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                                        "hover:bg-accent hover:text-accent-foreground",
-                                        "focus:bg-accent focus:text-accent-foreground focus:outline-none",
-                                        isActiveRoute(item.href) 
-                                            ? "bg-accent text-accent-foreground shadow-sm" 
+                                {item.children ? (
+                                    // Renderizar DropdownMenu para items con hijos
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className={cn(
+                                                "flex items-center gap-2",
+                                                isActiveRoute(item) 
+                                                  ? "bg-accent text-accent-foreground" 
+                                                  : "text-muted-foreground hover:text-foreground"
+                                            )}>
+                                                {item.icon && <item.icon className="h-4 w-4" />}
+                                                <span>{item.title}</span>
+                                                <ChevronDown className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start">
+                                            {item.children.map((child) => (
+                                                <DropdownMenuItem key={child.title} asChild>
+                                                    <Link href={child.href!} className="flex items-center gap-2">
+                                                        {child.icon && <child.icon className="mr-2 h-4 w-4" />}
+                                                        {child.title}
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                ) : (
+                                    // MODIFICADO: Renderizar Button como Link para items sin hijos
+                                    <Button asChild variant="ghost" className={cn(
+                                        "flex items-center gap-2",
+                                        isActiveRoute(item)
+                                            ? "bg-accent text-accent-foreground shadow-sm"
                                             : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    <Link href={item.href} className="flex items-center gap-2">
-                                        {item.icon && (
-                                            <div className="flex items-center justify-center w-6 h-6">
-                                                <item.icon className="h-4 w-4" />
-                                            </div>
-                                        )}
-                                        <span>{item.title}</span>
-                                    </Link>
-                                </NavigationMenuLink>
+                                    )}>
+                                        <Link href={item.href!}>
+                                            {item.icon && <item.icon className="h-4 w-4" />}
+                                            <span>{item.title}</span>
+                                        </Link>
+                                    </Button>
+                                )}
                             </NavigationMenuItem>
                         ))}
                     </NavigationMenuList>
@@ -182,7 +225,6 @@ export function AppSidebar() {
                                     Configuración
                                 </Link>
                             </DropdownMenuItem>
-                            
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                                 <LogOut className="mr-2 h-4 w-4" />
@@ -217,23 +259,56 @@ export function AppSidebar() {
                                 </div>
 
                                 {/* Navigation Mobile */}
-                                <nav className="flex flex-col space-y-2">
-                                    {mainNavItems.map((item) => (
-                                        <Link
-                                            key={item.title}
-                                            href={item.href}
-                                            className={cn(
-                                                "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                                                isActiveRoute(item.href) 
-                                                    ? "bg-accent text-accent-foreground" 
-                                                    : "hover:bg-accent hover:text-accent-foreground"
-                                            )}
-                                            onClick={() => setIsMobileMenuOpen(false)}
-                                        >
-                                            {item.icon && <item.icon className="h-4 w-4" />}
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    ))}
+                                <nav className="flex flex-col space-y-1">
+                                    {mainNavItems.map((item) =>
+                                        item.children ? (
+                                            <Collapsible key={item.title}>
+                                                <CollapsibleTrigger className={cn(
+                                                    "flex w-full items-center justify-between space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+                                                    isActiveRoute(item) ? "bg-accent text-accent-foreground" : ""
+                                                )}>
+                                                    <div className="flex items-center gap-3">
+                                                      {item.icon && <item.icon className="h-4 w-4" />}
+                                                      <span>{item.title}</span>
+                                                    </div>
+                                                    <ChevronsUpDown className="h-4 w-4" />
+                                                </CollapsibleTrigger>
+                                                <CollapsibleContent className="py-1 pl-8">
+                                                    {item.children.map((child) => (
+                                                        <Link
+                                                            key={child.title}
+                                                            href={child.href!}
+                                                            className={cn(
+                                                                "flex items-center space-x-3 py-2 rounded-md text-sm font-medium transition-colors",
+                                                                child.href && isActiveRoute(child)
+                                                                    ? "text-foreground font-semibold"
+                                                                    : "text-muted-foreground hover:text-foreground"
+                                                            )}
+                                                            onClick={() => setIsMobileMenuOpen(false)}
+                                                        >
+                                                            {child.icon && <child.icon className="h-4 w-4" />}
+                                                            <span>{child.title}</span>
+                                                        </Link>
+                                                    ))}
+                                                </CollapsibleContent>
+                                            </Collapsible>
+                                        ) : (
+                                            <Link
+                                                key={item.title}
+                                                href={item.href!}
+                                                className={cn(
+                                                    "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                                                    item.href && isActiveRoute(item)
+                                                        ? "bg-accent text-accent-foreground"
+                                                        : "hover:bg-accent hover:text-accent-foreground"
+                                                )}
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                            >
+                                                {item.icon && <item.icon className="h-4 w-4" />}
+                                                <span>{item.title}</span>
+                                            </Link>
+                                        )
+                                    )}
                                 </nav>
 
                                 {/* Footer nav items en mobile */}

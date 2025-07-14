@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('reference_number')->unique()->comment('Número de referencia o de comprobante.');
             $table->date('transaction_date')->comment('Fecha de la transacción.');
             $table->string('origin_bank')->nullable()->comment('Banco de origen (útil para transferencias).');
+            $table->string('receipt');
             $table->timestamps();
         });
     }

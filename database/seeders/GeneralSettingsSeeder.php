@@ -14,8 +14,8 @@ class GeneralSettingsSeeder extends Seeder
     public function run(): void
     {
         GeneralSetting::create([
-            'app_name'  => 'Laravel App',
-            'logo_path' => 'logo.png',
+            'app_name'  => 'Esign Sys',
+            'logo_path' => 'images/logo.png',
         ]);
     }
 }

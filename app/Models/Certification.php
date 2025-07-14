@@ -532,4 +532,9 @@ class Certification extends Model
     {
         return $this->hasMany(Payment::class);
     }
+
+    public function period(): BelongsTo
+    {
+        return $this->belongsTo(Signature::class, 'period', 'period');
+    }
 }

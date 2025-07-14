@@ -11,10 +11,12 @@ import { Head, useForm } from "@inertiajs/react";
 import { useEffect, useState } from "react";
 import { CalendarIcon, Upload, User, Building, FileText, Shield, MapPin } from "lucide-react";
 import ErrorModal from "@/components/ErrorModal";
+import { Signature } from "@/types";
 
+// En tu interfaz, puedes ser más específico
 interface CreateCertificationProps {
     applicationTypes: Record<string, string>;
-    periods: Record<string, string>;
+    periods: Signature[]; // Usar el tipo Signature en lugar de Array<any>
     cities: string[];
     provinces: string[];
 }
@@ -675,8 +677,14 @@ export default function CreateCertification({
                                     <SelectValue placeholder="Seleccione período" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {Object.entries(periods).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                                    {/* CORRECTO: Usar .map() directamente sobre el array de objetos */}
+                                    {periods.map((plan) => (
+                                        <SelectItem 
+                                            key={plan.id}
+                                            value={plan.period}
+                                        >
+                                            {plan.display_name} - ${plan.price}  
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -960,7 +968,7 @@ export default function CreateCertification({
                             <strong>Tipo:</strong> {applicationTypes[data.applicationType]}
                         </div>
                         <div>
-                            <strong>Período:</strong> {periods[data.period]}
+                            <strong>Período:</strong> { periods.find(p => p.period === data.period)?.display_name }
                         </div>
                         <div>
                             <strong>Nombre:</strong> {data.applicantName} {data.applicantLastName}

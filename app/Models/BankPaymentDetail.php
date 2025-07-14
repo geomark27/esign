@@ -31,6 +31,7 @@ class BankPaymentDetail extends Model
         'reference_number',
         'transaction_date',
         'origin_bank',
+        'receipt',
     ];
     
     protected $casts = [
@@ -41,4 +42,12 @@ class BankPaymentDetail extends Model
     {
         return $this->morphOne(Payment::class, 'detailable');
     }
+
+    const AVAILABLE_BANKS = [
+        'pichincha'     => 'Banco Pichincha',
+        'guayaquil'     => 'Banco Guayaquil',
+        'austro'        => 'Banco del Austro',
+        'produbanco'    => 'Banco Produbanco',
+        'internacional' => 'Banco Internacional',
+    ];
 }

@@ -46,6 +46,12 @@ export const useBreadcrumbs = () => {
             ]),
         },
 
+        signatures: {
+            index: () => createAdminBreadcrumbs([
+                { title: 'Firmas', href: '/admin/signatures' }
+            ]),
+        },
+
         roles: {
             index: () => createAdminBreadcrumbs([
                 { title: 'Gestión de Roles', href: '/admin/roles' }

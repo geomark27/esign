@@ -20,9 +20,10 @@ export interface NavGroup {
 
 export interface NavItem {
     title: string;
-    href: string;
+    href?: string; // Href es opcional para los items que son solo contenedores de sub-menús
     icon?: LucideIcon | null;
     isActive?: boolean;
+    children?: NavItem[]; // Array de sub-items para el desplegable
 }
 
 export interface SharedData {
@@ -186,4 +187,65 @@ export interface PaymentMethod {
     display_name: string;
     description?: string;
     is_active: boolean;
+}
+
+export interface Signature {
+    id: number;
+    period: string;
+    display_name: string;
+    cost: string; // Eloquent los devuelve como strings
+    price: string;
+    description: string | null;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface PaginatedSignatures {
+    data: Signature[];
+    current_page: number;
+    first_page_url: string;
+    from: number;
+    last_page: number;
+    last_page_url: string;
+    links: { url: string | null; label: string; active: boolean }[];
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number;
+    total: number;
+}
+
+export interface Payment {
+    id: number;
+    certification_id: number;
+    method_id: number;
+    amount: string; // Eloquent los devuelve como strings
+    status: 'pending' | 'verified';
+    transaction_id?: string;
+    receipt?: string;
+    detailable_type?: string;
+    detailable_id?: number;
+    created_at: string;
+    updated_at: string;
+
+    // Relaciones
+    certification?: Certification;
+    method?: PaymentMethod;
+}
+
+export interface PaginatedPayments {
+    data: Payment[];
+    current_page: number;
+    first_page_url: string;
+    from: number;
+    last_page: number;
+    last_page_url: string;
+    links: { url: string | null; label: string; active: boolean }[];
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number;
+    total: number;
 }

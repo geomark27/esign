@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { toast } from "sonner";
+import { Toaster, toast } from "sonner";
 import { useBreadcrumbs } from '@/hooks/use-breadcrumbs';
 import AppLayout from '@/layouts/app-layout';
 import { PaymentMethod, type Certification, type PageProps } from '@/types';
@@ -41,6 +41,7 @@ interface ShowCertificationProps extends PageProps {
     certification: Certification & {
         current_age?: number;
         is_over_65?: boolean;
+        periodPrice: number;
         formatted_created_at: string;
         formatted_updated_at: string;
         formatted_appointment_expiration?: string;
@@ -54,6 +55,9 @@ interface ShowCertificationProps extends PageProps {
     canSubmit: boolean;
     hasCompanyDocs: boolean;
     paymentMethods: PaymentMethod[];
+    cardBrands: string[];
+    allBanks: string[];
+    hasPaid: boolean;
 }
 
 export default function ShowCertification({
@@ -66,13 +70,18 @@ export default function ShowCertification({
     canDelete,
     canSubmit,
     hasCompanyDocs,
-    paymentMethods
+    paymentMethods,
+    cardBrands,
+    allBanks,
+    hasPaid
 }: ShowCertificationProps) {
     const { userBreadcrumbs } = useBreadcrumbs();
     const breadcrumbs = userBreadcrumbs.certifications.show(certification.certification_number);
     const { flash } = usePage<ShowCertificationProps>().props;
-
+    const { periodPrice } = certification;
+    
     const [isDeleting, setIsDeleting]     = useState(false);
+    const [isDeletingPay, setIsDeletingPay]     = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);  
@@ -85,39 +94,75 @@ export default function ShowCertification({
             toast.success(flash.success as string);
         }
         if (flash?.error) {
-            toast.error(flash.error as string); // Opcional: mantener el toast además de la alerta
-                    setAlertMessage(flash.error as string); // Establecer el mensaje para el componente Alert
+            toast.error(flash.error as string);
+                    setAlertMessage(flash.error as string);
         }
     }, [flash]);
 
     const handleDelete = () => {
-        if (confirm('¿Estás seguro de que deseas eliminar esta certificación? Esta acción no se puede deshacer.')) {
-            setIsDeleting(true);
-            router.delete(route('user.certifications.destroy', certification.id), 
-            {
-                onFinish: () => setIsDeleting(false)
-            });
-        }
+        toast.error('¿Estás seguro de eliminar?', {
+            description: 'Esta acción no se puede deshacer.',
+            
+            action: {
+                label: 'Confirmar',
+                onClick: () => {
+                    // La lógica que antes estaba dentro del if() ahora va aquí
+                    setIsDeleting(true);
+                    router.delete(route('user.certifications.destroy', certification.id), {
+                        onFinish: () => setIsDeleting(false),
+                        preserveScroll: true
+                    });
+                },
+            },
+
+            cancel: {
+                label: "Cancelar",
+                onClick: () => {},
+            },
+        });
     };
 
-    // --- MODIFICACIÓN 2: Simplificar handleSubmit ---
-    // Se elimina la lógica de `onError` y `onSuccess` que manejaba mensajes.
-    // La respuesta (éxito o error) ahora es gestionada exclusivamente por el `useEffect`
-    // que lee los `flash messages` de la redirección.
     const handleSubmit = () => {
-        if (!confirm("¿Estás seguro de que deseas enviar esta certificación para revisión?")) {
-            return;
-        }
-        
-        setIsSubmitting(true);
+        toast.warning('¿Estás seguro de que deseas enviar esta certificación para revisión?', {
+            action: {
+                label: 'Confirmar',
+                onClick: () => {
+                    setIsSubmitting(true);
+                    router.post(
+                        route('user.certifications.submit', certification.id),
+                        {},
+                        {
+                            onFinish: () => setIsSubmitting(false),
+                            preserveScroll: true,
+                        }
+                    );
+                },
+            },
+            cancel: {
+                label: "Cancelar",
+                onClick: () => {},
+            },
+        });
+    };
+    
+    const deletePayment = () => {
+        toast.warning('¿Estás seguro de eliminar el pago?', {
+            action: {
+                label: 'Confirmar',
+                onClick: () => {
+                    setIsDeletingPay(true);
+                    router.delete(route('user.certifications.payments.destroy', certification.id), {
+                        onFinish: () => setIsDeletingPay(false),
+                        preserveScroll: true
+                    });
+                },
+            },
 
-        router.post(
-            route("user.certifications.submit", certification.id),
-            {},
-            {
-                onFinish: () => setIsSubmitting(false),
-            }
-        );
+            cancel: {
+                label: "Cancelar",
+                onClick: () => {},
+            },
+        });
     };
 
     const handleRefreshStatus = () => {
@@ -163,6 +208,7 @@ export default function ShowCertification({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Certificación #${certification.certification_number}`} />
+            <Toaster position="top-center" richColors />
 
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6">
                 {/* Header */}
@@ -195,16 +241,33 @@ export default function ShowCertification({
                         </Button>
                         )}
 
-                        {/* <PaymentModal
-                            certificationId={id}
-                            methods={paymentMethods}
-                            onSuccess={refreshPage}
+                        {!hasPaid && (
+                            <PaymentModal
+                                certificationId={id}
+                                periodPrice={periodPrice}
+                                methods={paymentMethods}
+                                cardBrands={cardBrands}
+                                allBanks={allBanks}
+                                onSuccess={refreshPage}
                             >
-                            <Button variant="default" className="flex items-center gap-2">
-                                <DollarSign className="h-4 w-4" />
-                                Registrar Pago
+                                <Button variant="default" className="flex items-center gap-2">
+                                    <DollarSign className="h-4 w-4" />
+                                    Registrar Pago
+                                </Button>
+                            </PaymentModal>
+                        )}
+
+                        {hasPaid && (
+                            <Button
+                                onClick={deletePayment}
+                                disabled={isDeletingPay}
+                                variant="outline"
+                                className="flex items-center gap-2 text-red-600 border-red-600 hover:bg-red-50"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                {isDeletingPay ? 'Eliminando pago...' : 'Eliminar Pago'}
                             </Button>
-                        </PaymentModal> */}
+                        )}
 
                         {certification.status !== 'draft' && (
                         <Button

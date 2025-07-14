@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('card_brand')->comment('Ej: Visa, Mastercard, Amex.');
             $table->string('last_four_digits', 4)->comment('Últimos 4 dígitos de la tarjeta.');
             $table->integer('installments')->default(1)->comment('Número de cuotas.');
+            $table->string('receipt');
             $table->timestamps();
         });
     }

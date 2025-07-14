@@ -23,8 +23,6 @@ return new class extends Migration
             $table->enum('status', [
                 Payment::STATUS_PENDING,
                 Payment::STATUS_VERIFIED,
-                Payment::STATUS_REJECTED,
-                Payment::STATUS_VOIDED,
             ]);
             $table->text('notes')->nullable();
             $table->morphs('detailable');

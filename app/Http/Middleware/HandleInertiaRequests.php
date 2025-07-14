@@ -2,27 +2,17 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\GeneralSetting; // <-- 1. IMPORTA TU MODELO
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache; // <-- 2. IMPORTA LA CLASE CACHE
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
-    /**
-     * The root template that's loaded on the first page visit.
-     *
-     * @see https://inertiajs.com/server-side-setup#root-template
-     *
-     * @var string
-     */
     protected $rootView = 'app';
 
-    /**
-     * Determines the current asset version.
-     *
-     * @see https://inertiajs.com/asset-versioning
-     */
     public function version(Request $request): ?string
     {
         return parent::version($request);
@@ -30,11 +20,21 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
+
+        $settings = Cache::remember('general_settings', now()->addHour(), function () {
+            return GeneralSetting::first();
+        });
+
+        if ($settings) {
+            config(['app.name' => $settings->app_name]);
+        }
+
+
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
-        
+
+
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user() ? [
@@ -58,6 +58,10 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'warning' => fn () => $request->session()->get('warning'),
                 'info' => fn () => $request->session()->get('info'),
+            ],
+            'settings' => [
+                'appName'   => $settings->app_name,
+                'logoPath'  => $settings->logo_path ? asset($settings->logo_path) : '/favicon.svg',
             ],
         ];
     }

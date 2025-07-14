@@ -43,14 +43,10 @@ class Payment extends Model
 
     const STATUS_PENDING    = 'pending';
     const STATUS_VERIFIED   = 'verified';
-    const STATUS_REJECTED   = 'rejected';
-    const STATUS_VOIDED     = 'voided';
 
     const STATUS_OPTIONS = [
         self::STATUS_PENDING    => 'Pendiente',
         self::STATUS_VERIFIED   => 'Verificado',
-        self::STATUS_REJECTED   => 'Rechazado',
-        self::STATUS_VOIDED     => 'Anulado',
     ];
 
     /**

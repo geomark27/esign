@@ -16,10 +16,20 @@ class CardPaymentDetail extends Model
         'card_brand',
         'last_four_digits',
         'installments', // Número de cuotas o meses
+        'receipt',
     ];
 
     public function payment(): MorphOne
     {
         return $this->morphOne(Payment::class, 'detailable');
     }
+
+    const AVAILABLE_BRANDS = [
+        'visa'              => 'Visa',
+        'mastercard'        => 'Mastercard',
+        'american_express'  => 'American Express',
+        'diners_club'       => 'Diners Club',
+        'discover'          => 'Discover',
+    ];
+
 }

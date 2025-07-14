@@ -24,6 +24,7 @@ interface UserIndexProps extends PageProps
 export default function UsersIndex({ users, roles, filters, flash}: UserIndexProps) {
     const { adminBreadcrumbs } = useBreadcrumbs();
     const breadcrumbs = adminBreadcrumbs.users.index();
+    
     const [search, setSearch] = useState(filters.search || '');
     const [selectedRole, setSelectedRole] = useState(filters.role || '');
 

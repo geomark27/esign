@@ -7,6 +7,7 @@ import AppLayout from '@/layouts/app-layout';
 import { useBreadcrumbs } from '@/hooks/use-breadcrumbs';
 import { type Certification, type PaginatedCertifications, type PageProps } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
+import { Toaster, toast } from "sonner";
 import { 
     FileText, Plus, Search, Eye, Edit, Trash2, Clock, 
     CheckCircle, XCircle, AlertCircle, Filter
@@ -64,11 +65,22 @@ export default function CertificationsIndex({
 
     // Función para eliminar certificación
     const deleteCertification = (certification: Certification) => {
-        if (confirm(`¿Estás seguro de que quieres eliminar esta certificación?`)) {
-            router.delete(route('user.certifications.destroy', certification.id), {
-                preserveScroll: true,
-            });
-        }
+        toast.error('¿Estás seguro de eliminar?', {
+            description: 'Esta acción no se puede deshacer.',
+            action: {
+                label: 'Confirmar',
+                onClick: () => {
+                    router.delete(route('user.certifications.destroy', certification.id), {
+                        preserveScroll: true
+                    });
+                },
+            },
+
+            cancel: {
+                label: "Cancelar",
+                onClick: () => {},
+            },
+        });
     };
 
     // Función para obtener color del estado
@@ -100,6 +112,7 @@ export default function CertificationsIndex({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Mis Certificaciones" />
+            <Toaster position="top-center" richColors />
             
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6">
                 {/* Header */}

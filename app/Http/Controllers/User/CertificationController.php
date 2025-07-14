@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Models\BankPaymentDetail;
+use App\Models\CardPaymentDetail;
 use App\Models\Certification;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
+use App\Models\Signature;
 use App\Services\FirmaSeguraService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -56,10 +59,10 @@ class CertificationController extends Controller
     public function create()
     {
         return Inertia::render('certifications/Create', [
-            'applicationTypes' => Certification::APPLICATION_TYPES,
-            'periods'          => Certification::PERIODS,
-            'cities'           => Certification::CITIES,
-            'provinces'        => Certification::PROVINCES,
+            'applicationTypes'  => Certification::APPLICATION_TYPES,
+            'periods'           => Signature::where('is_active', true)->get(),
+            'cities'            => Certification::CITIES,
+            'provinces'         => Certification::PROVINCES,
         ]);
     }
 
@@ -69,8 +72,8 @@ class CertificationController extends Controller
     public function store(Request $request)
     {
           //dd($request->allFiles());
-        $rules   = $this->getValidationRules($request->applicationType ?? 'NATURAL_PERSON');
-        $messages = $this->getValidationMessages();
+        $rules      = $this->getValidationRules($request->applicationType ?? 'NATURAL_PERSON');
+        $messages   = $this->getValidationMessages();
         $request->validate($rules, $messages);
 
         DB::beginTransaction();
@@ -140,7 +143,7 @@ class CertificationController extends Controller
         $this->validateRole($certification);
 
         $certification->load(['user', 'processedBy']);
-        $methods    = PaymentMethod::active()->get();
+        $methods    = PaymentMethod::whereNotIn('id', [6, 7])->active()->get();
 
         // Calcular edad en tiempo real si es necesario
         $currentAge = $certification->dateOfBirth ? 
@@ -150,23 +153,31 @@ class CertificationController extends Controller
             'certification' => [
                 ...$certification->toArray(),
                 'current_age' => $currentAge,
+                'periodPrice' => Signature::where('period', $certification->period)->where('is_active', true)->first()->price,
                 'is_over_65' => $currentAge && $currentAge >= 65,
                 'formatted_created_at' => $certification->created_at->format('d/m/Y H:i'),
                 'formatted_updated_at' => $certification->updated_at->format('d/m/Y H:i'),
                 'formatted_appointment_expiration' => $certification->appointmentExpirationDate ? 
                     \Carbon\Carbon::parse($certification->appointmentExpirationDate)->format('d/m/Y') : null,
             ],
-            'statusOptions' => Certification::STATUS_OPTIONS,
-            'validationStatusOptions' => Certification::VALIDATION_STATUSES,
-            'applicationTypes'  => Certification::APPLICATION_TYPES,
-            'periods'           => Certification::PERIODS,
-            'canEdit'           => $this->canEditByValidationStatus($certification),
-            'canDelete'         => $certification->status === 'draft',
-            'canSubmit'         => $certification->status === 'draft' && $this->isCompleteCertification($certification),
-            'hasCompanyDocs'    => $certification->applicationType === 'LEGAL_REPRESENTATIVE' || 
-                            ($certification->applicationType === 'NATURAL_PERSON' && !empty($certification->companyRuc)),
-            'paymentMethods'           => $methods,
+            'statusOptions'             => Certification::STATUS_OPTIONS,
+            'validationStatusOptions'   => Certification::VALIDATION_STATUSES,
+            'applicationTypes'          => Certification::APPLICATION_TYPES,
+            'periods'                   => Certification::PERIODS,
+            'canEdit'                   => $this->canEditByValidationStatus($certification),
+            'canDelete'                 => $certification->status === 'draft',
+            'canSubmit'                 => $certification->status === 'draft' && $this->isCompleteCertification($certification),
+            'hasCompanyDocs'            => $certification->applicationType === 'LEGAL_REPRESENTATIVE' || ($certification->applicationType === 'NATURAL_PERSON' && !empty($certification->companyRuc)),
+            'paymentMethods'            => $methods,
+            'cardBrands'                => CardPaymentDetail::AVAILABLE_BRANDS,
+            'allBanks'                  => BankPaymentDetail::AVAILABLE_BANKS,
+            'hasPaid'                   => $this->hasPaid($certification),
         ]);
+    }
+
+    private function hasPaid($certification)
+    {
+        return Payment::where('certification_id', $certification->id)->exists();
     }
 
     /**
@@ -195,7 +206,7 @@ class CertificationController extends Controller
                 'is_over_65' => $currentAge && $currentAge >= 65,
             ],
             'applicationTypes' => Certification::APPLICATION_TYPES,
-            'periods' => Certification::PERIODS,
+            'periods'           => Signature::where('is_active', true)->get(),
             'cities' => Certification::CITIES,
             'provinces' => Certification::PROVINCES,
             'statusOptions' => Certification::STATUS_OPTIONS,
@@ -285,14 +296,14 @@ class CertificationController extends Controller
         $this->validateRole($certification);
 
         // 1) Pago verificado
-        /* if (! $certification->payments()
+        if (! $certification->payments()
                             ->where('status', Payment::STATUS_VERIFIED)
                             ->exists()
         ) {
             return redirect()
                 ->route('user.certifications.show', $certification)
                 ->with('error', 'Para enviar la certificación debe existir un pago verificado y no puede haber sólo pagos pendientes.');
-        } */
+        }
 
         // 2) Certificación completa
         if (! $certification->canBeSubmitted()) {
@@ -369,6 +380,13 @@ class CertificationController extends Controller
             abort(403);
         }
 
+        if ($this->hasPaid($certification)) {
+            return redirect()
+                ->route('user.certifications.index')
+                ->with('error', 'Este certificado ya tiene un pago, no se puede eliminar');
+        }
+
+
         if ($certification->validationStatus !== 'REGISTERED') {
             return redirect()
                 ->route('user.certifications.index')
@@ -381,7 +399,7 @@ class CertificationController extends Controller
 
         return redirect()
             ->route('user.certifications.index')
-            ->with('success', 'Certificación eliminada exitosamente.');
+            ->with('success', 'Certificado eliminado exitosamente.');
     }
 
     /**
