@@ -135,7 +135,7 @@ export default function PaymentModal({
                     {/* --- Campos Comunes --- */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label htmlFor="period_price">Monto del Periodo</Label>
+                            <Label htmlFor="period_price">Monto a pagar*</Label>
                             <Input
                                 id="period_price"
                                 type="number"
@@ -146,7 +146,7 @@ export default function PaymentModal({
                             />
                         </div>
                         <div>
-                            <Label htmlFor="amount">Monto</Label>
+                            <Label htmlFor="amount">Monto pagado*</Label>
                             <Input
                                 id="amount"
                                 type="number"
@@ -158,7 +158,7 @@ export default function PaymentModal({
                             {form.errors.amount && <p className="text-sm text-red-500 mt-1">{form.errors.amount}</p>}
                         </div>
                         <div>
-                            <Label htmlFor="payment_date">Fecha de Pago</Label>
+                            <Label htmlFor="payment_date">Fecha de Pago*</Label>
                             <Input
                                 id="payment_date"
                                 type="date"
@@ -170,7 +170,7 @@ export default function PaymentModal({
                         </div>
                     </div>
                     <div>
-                        <Label htmlFor="method">Método de Pago</Label>
+                        <Label htmlFor="method">Método de Pago*</Label>
                         <Select value={String(form.data.method_id)} onValueChange={val => form.setData('method_id', val)} required>
                             <SelectTrigger id="method">
                                 {/* El placeholder solo se mostrará si la lista de métodos está vacía */}
