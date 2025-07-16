@@ -122,7 +122,7 @@ class Certification extends Model
         'Quito', 'Guayaquil', 'Cuenca', 'Santo Domingo', 'Machala',
         'Durán', 'Manta', 'Portoviejo', 'Loja', 'Ambato', 'Esmeraldas',
         'Quevedo', 'Riobamba', 'Milagro', 'Ibarra', 'Babahoyo',
-        'La Libertad', 'Daule', 'Quinindé', 'Ventanas', 'Cayambe', 'Caluma'
+        'La Libertad', 'Daule', 'Quinindé', 'Ventanas', 'Cayambe', 'Caluma', 'Montecristi', 'Santa Cruz'
     ];
 
     const PROVINCES = [
