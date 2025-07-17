@@ -120,9 +120,7 @@ class PaymentController extends Controller
                 }
 
                 // 6. Crear el pago principal y asociarlo con su detalle.
-                $status = in_array($paymentMethod->name, ['transfer', 'deposit'])
-                    ? Payment::STATUS_PENDING
-                    : Payment::STATUS_VERIFIED;
+                $status = Payment::STATUS_VERIFIED;
 
                 $paymentDetail->payment()->create([
                     'certification_id' => $request->certification_id,
