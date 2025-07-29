@@ -27,6 +27,7 @@ import {
     CheckCircle
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 
 interface EditCertificationProps extends PageProps {
     certification: Certification & {
@@ -35,8 +36,8 @@ interface EditCertificationProps extends PageProps {
     };
     applicationTypes: Record<string, string>;
     periods: Signature[]; // Usar el tipo Signature en lugar de Array<any>
-    cities: string[];
-    provinces: string[];
+    cities: Array<{id: number; name: string}>;
+    provinces: Array<{id: number; name: string}>;
     statusOptions: Record<string, string>;
     validationStatusOptions: Record<string, string>;
     canEdit: boolean;
@@ -106,6 +107,8 @@ export default function EditCertification({
     
     const [currentStep, setCurrentStep] = useState(1);
     const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
+    const [availableCities, setAvailableCities] = useState<Array<{id: number; name: string}>>(cities || []);
+    const [loadingCities, setLoadingCities] = useState(false);
     const totalSteps = 4;
 
     const { data, setData, put, processing, errors, progress } = useForm<FormData>({
@@ -152,6 +155,40 @@ export default function EditCertification({
     const requiresCompanyDocs = data.applicationType === 'LEGAL_REPRESENTATIVE';
     const isNaturalWithRuc = data.applicationType === 'NATURAL_PERSON' && data.companyRuc;
     const isOver65 = certification.is_over_65;
+
+    // Función para cargar ciudades por provincia
+    const loadCitiesByProvince = async (provinceId: number) => {
+        if (!provinceId) {
+            setAvailableCities([]);
+            return;
+        }
+        
+        setLoadingCities(true);
+        try {
+            const response = await axios.get(`/user/api/cities-by-province/${provinceId}`);
+            if (response.data.success) {
+                setAvailableCities(response.data.cities);
+            } else {
+                console.error('Error al cargar ciudades:', response.data.message);
+                setAvailableCities([]);
+            }
+        } catch (error) {
+            console.error('Error al cargar ciudades:', error);
+            setAvailableCities([]);
+        } finally {
+            setLoadingCities(false);
+        }
+    };
+
+    // Efecto para cargar ciudades cuando cambia la provincia
+    useEffect(() => {
+        const selectedProvince = provinces.find(p => p.name === data.province);
+        if (selectedProvince) {
+            loadCitiesByProvince(selectedProvince.id);
+        } else {
+            setAvailableCities([]);
+        }
+    }, [data.province]);
 
     // Limpiar campos empresariales si no son necesarios
     useEffect(() => {
@@ -520,8 +557,8 @@ export default function EditCertification({
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {provinces.map(province => (
-                                                    <SelectItem key={province} value={province}>
-                                                        {province}
+                                                    <SelectItem key={province.id} value={province.name}>
+                                                        {province.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -532,14 +569,24 @@ export default function EditCertification({
 
                                     <div>
                                         <Label htmlFor="city">Ciudad *</Label>
-                                        <Select value={data.city} onValueChange={value => setData('city', value)}>
+                                        <Select 
+                                            value={data.city} 
+                                            onValueChange={value => setData('city', value)}
+                                            disabled={!data.province || loadingCities}
+                                        >
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Seleccionar ciudad" />
+                                                <SelectValue placeholder={
+                                                    !data.province 
+                                                        ? "Seleccione una provincia primero" 
+                                                        : loadingCities 
+                                                            ? "Cargando ciudades..." 
+                                                            : "Seleccionar ciudad"
+                                                } />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {cities.map(city => (
-                                                    <SelectItem key={city} value={city}>
-                                                        {city}
+                                                {availableCities.map(city => (
+                                                    <SelectItem key={city.id} value={city.name}>
+                                                        {city.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>

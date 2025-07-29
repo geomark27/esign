@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             GeneralSettingsSeeder::class,
             PaymentMethodSeeder::class,
             SignatureSeeder::class,
+            ProvinceSeeder::class,
+            CitySeeder::class,
         ]);
     }
 }

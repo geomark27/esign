@@ -1,1 +1,0 @@
-import{j as m}from"./app-DBjPCby5.js";import{A as s}from"./auth-simple-layout-CMtmGvou.js";function p({children:t,title:o,description:r,...u}){return m.jsx(s,{title:o,description:r,...u,children:t})}export{p as A};

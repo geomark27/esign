@@ -1,0 +1,1 @@
+import{j as m}from"./app-NQZYwZxE.js";import{A as s}from"./auth-simple-layout-COBWOARs.js";function p({children:t,title:o,description:r,...u}){return m.jsx(s,{title:o,description:r,...u,children:t})}export{p as A};

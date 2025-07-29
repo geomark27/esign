@@ -93,6 +93,20 @@ export const useBreadcrumbs = () => {
                 { title: 'Editar', href: '#' }
             ]),
         },
+
+        sectors: {
+            index: () => createUserBreadcrumbs([
+                { title: 'Gestión de Sectores', href: '/user/sectors' }
+            ]),
+            create: () => createUserBreadcrumbs([
+                { title: 'Gestión de Sectores', href: '/user/sectors' },
+                { title: 'Nueva Ciudad', href: '/user/sectors/create' }
+            ]),
+            edit: (id?: number | string) => createUserBreadcrumbs([
+                { title: 'Gestión de Sectores', href: '/user/sectors' },
+                { title: 'Editar Ciudad', href: '#' }
+            ]),
+        },
     };
 
     // Mantener clientBreadcrumbs para compatibilidad hacia atrás

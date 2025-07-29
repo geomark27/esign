@@ -5,20 +5,23 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useBreadcrumbs } from "@/hooks/use-breadcrumbs";
 import AppLayout from "@/layouts/app-layout";
-import { Head, useForm } from "@inertiajs/react";
+import { Head, useForm, router } from "@inertiajs/react";
 import { useEffect, useState } from "react";
-import { CalendarIcon, Upload, User, Building, FileText, Shield, MapPin } from "lucide-react";
+import { CalendarIcon, Upload, User, Building, FileText, Shield, MapPin, Plus } from "lucide-react";
 import ErrorModal from "@/components/ErrorModal";
 import { Signature } from "@/types";
+import axios from "axios";
+import { toast } from "sonner";
 
 // En tu interfaz, puedes ser más específico
 interface CreateCertificationProps {
     applicationTypes: Record<string, string>;
     periods: Signature[]; // Usar el tipo Signature en lugar de Array<any>
-    cities: string[];
-    provinces: string[];
+    cities: Array<{id: number; name: string}>;
+    provinces: Array<{id: number; name: string}>;
 }
 
 interface FormData {
@@ -80,6 +83,17 @@ export default function CreateCertification({
     
     const [currentStep, setCurrentStep] = useState(1);
     const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
+    const [availableCities, setAvailableCities] = useState<Array<{id: number; name: string}>>([]);
+    const [loadingCities, setLoadingCities] = useState(false);
+    
+    // Estados para el modal de crear ciudad
+    const [isCreateCityModalOpen, setIsCreateCityModalOpen] = useState(false);
+    const [isCreatingCity, setIsCreatingCity] = useState(false);
+    const [newCityForm, setNewCityForm] = useState({
+        name: '',
+        province_id: ''
+    });
+    
     const totalSteps = 4;
 
     const { data, setData, post, processing, errors, progress } = useForm<FormData>({
@@ -148,6 +162,131 @@ export default function CreateCertification({
     const age = calculateAge(data.dateOfBirth);
     const isOver65 = age >= 65;
     const isUnder18 = age < 18 && data.dateOfBirth !== '';
+
+    // Función para cargar ciudades por provincia
+    const loadCitiesByProvince = async (provinceId: number) => {
+        if (!provinceId) {
+            setAvailableCities([]);
+            return;
+        }
+        
+        setLoadingCities(true);
+        try {
+            const response = await axios.get(`/user/api/cities-by-province/${provinceId}`);
+            if (response.data.success) {
+                setAvailableCities(response.data.cities);
+            } else {
+                console.error('Error al cargar ciudades:', response.data.message);
+                setAvailableCities([]);
+            }
+        } catch (error) {
+            console.error('Error al cargar ciudades:', error);
+            setAvailableCities([]);
+        } finally {
+            setLoadingCities(false);
+        }
+    };
+
+    // Efecto para cargar ciudades cuando cambia la provincia
+    useEffect(() => {
+        const selectedProvince = provinces.find(p => p.name === data.province);
+        if (selectedProvince) {
+            loadCitiesByProvince(selectedProvince.id);
+            // Limpiar la ciudad seleccionada si no es de esta provincia
+            if (data.city && !availableCities.some(c => c.name === data.city)) {
+                setData('city', '');
+            }
+        } else {
+            setAvailableCities([]);
+        }
+    }, [data.province]);
+
+    // Funciones para manejar el modal de crear ciudad
+    const openCreateCityModal = () => {
+        const selectedProvince = provinces.find(p => p.name === data.province);
+        setNewCityForm({
+            name: '',
+            province_id: selectedProvince ? selectedProvince.id.toString() : ''
+        });
+        setIsCreateCityModalOpen(true);
+    };
+
+    const closeCreateCityModal = () => {
+        setIsCreateCityModalOpen(false);
+        setNewCityForm({ name: '', province_id: '' });
+    };
+
+    const handleCreateCitySubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (!newCityForm.name.trim() || !newCityForm.province_id) {
+            toast.error('Por favor completa todos los campos');
+            return;
+        }
+        
+        setIsCreatingCity(true);
+        
+        try {
+            const response = await axios.post(route('user.sectors.store'), newCityForm);
+            
+            if (response.status === 200 || response.status === 201) {
+                toast.success('Ciudad creada correctamente');
+                closeCreateCityModal();
+                
+                // Recargar las ciudades de la provincia seleccionada
+                const selectedProvince = provinces.find(p => p.name === data.province);
+                if (selectedProvince) {
+                    await loadCitiesByProvince(selectedProvince.id);
+                    // Seleccionar automáticamente la nueva ciudad
+                    setData('city', newCityForm.name);
+                }
+            }
+        } catch (error: any) {
+            console.error('Error al crear ciudad:', error);
+            console.log('Full error object:', JSON.stringify(error, null, 2));
+            
+            let errorMessage = 'Error al crear la ciudad';
+            
+            if (error.response) {
+                // Error del servidor con respuesta
+                const { status, data: errorData } = error.response;
+                
+                console.log('Error response status:', status);
+                console.log('Error response data:', errorData);
+                console.log('Error response data.errors:', errorData?.errors);
+                console.log('Error response data.message:', errorData?.message);
+                
+                if (status === 422) {
+                    // Errores de validación - priorizar el mensaje del campo 'name'
+                    if (errorData.errors?.name && Array.isArray(errorData.errors.name)) {
+                        errorMessage = errorData.errors.name[0];
+                        console.log('Using name error:', errorMessage);
+                    } else if (errorData.message) {
+                        errorMessage = errorData.message;
+                        console.log('Using message error:', errorMessage);
+                    }
+                } else if (status === 409) {
+                    // Conflicto - ciudad ya existe
+                    errorMessage = errorData.message || `La ciudad "${newCityForm.name}" ya existe en esta provincia`;
+                } else if (status === 500) {
+                    errorMessage = 'Error interno del servidor. Intente nuevamente';
+                } else if (errorData.message) {
+                    errorMessage = errorData.message;
+                }
+            } else if (error.request) {
+                // Error de red
+                errorMessage = 'Error de conexión. Verifique su conexión a internet';
+            } else {
+                // Otro tipo de error
+                errorMessage = error.message || 'Error inesperado al crear la ciudad';
+            }
+            
+            console.log('Final error message:', errorMessage);
+            toast.error(errorMessage);
+        } finally {
+            setIsCreatingCity(false);
+        }
+    };
 
     // Función para generar la plantilla del video
     const generateVideoTemplate = (): string => {
@@ -554,7 +693,7 @@ export default function CreateCertification({
                             </SelectTrigger>
                             <SelectContent>
                                 {provinces.map((province) => (
-                                    <SelectItem key={province} value={province}>{province}</SelectItem>
+                                    <SelectItem key={province.id} value={province.name}>{province.name}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -562,17 +701,42 @@ export default function CreateCertification({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="city">Ciudad *</Label>
-                        <Select value={data.city} onValueChange={(value) => setData('city', value)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Seleccione ciudad" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {cities.map((city) => (
-                                    <SelectItem key={city} value={city}>{city}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <Label htmlFor="city" className="text-sm font-medium">Ciudad *</Label>
+                        <div className="flex gap-2">
+                            <Select 
+                                value={data.city} 
+                                onValueChange={(value) => setData('city', value)}
+                                disabled={!data.province || loadingCities}
+                            >
+                                <SelectTrigger className="flex-1">
+                                    <SelectValue placeholder={
+                                        !data.province 
+                                            ? "Seleccione una provincia primero" 
+                                            : loadingCities 
+                                                ? "Cargando ciudades..." 
+                                                : "Seleccione ciudad"
+                                    } />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableCities.map((city) => (
+                                        <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {data.province && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={openCreateCityModal}
+                                    className="px-3 whitespace-nowrap"
+                                    disabled={loadingCities}
+                                >
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Agregar
+                                </Button>
+                            )}
+                        </div>
                         {(errors.city || stepErrors.city) && <p className="text-sm text-red-500">{errors.city || stepErrors.city}</p>}
                     </div>
                 </div>
@@ -1110,6 +1274,64 @@ export default function CreateCertification({
                     </div>
                 </form>
             </div>
+
+            {/* Modal para crear ciudad */}
+            <Dialog open={isCreateCityModalOpen} onOpenChange={setIsCreateCityModalOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Agregar Nueva Ciudad</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateCitySubmit} className="space-y-4">
+                        <div>
+                            <Label htmlFor="modal-province">Provincia</Label>
+                            <Select
+                                value={newCityForm.province_id}
+                                onValueChange={(value) => setNewCityForm({...newCityForm, province_id: value})}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecciona una provincia" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {provinces.map((province) => (
+                                        <SelectItem key={province.id} value={province.id.toString()}>
+                                            {province.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        
+                        <div>
+                            <Label htmlFor="modal-city-name">Nombre de la Ciudad</Label>
+                            <Input
+                                id="modal-city-name"
+                                type="text"
+                                value={newCityForm.name}
+                                onChange={(e) => setNewCityForm({...newCityForm, name: e.target.value})}
+                                placeholder="Ingresa el nombre de la ciudad"
+                                required
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4">
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={() => setIsCreateCityModalOpen(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button 
+                                type="submit" 
+                                disabled={isCreatingCity}
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                {isCreatingCity ? 'Guardando...' : 'Guardar Ciudad'}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

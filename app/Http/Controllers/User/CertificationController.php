@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\BankPaymentDetail;
 use App\Models\CardPaymentDetail;
 use App\Models\Certification;
+use App\Models\City;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
+use App\Models\Province;
 use App\Models\Signature;
 use App\Services\FirmaSeguraService;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +29,7 @@ class CertificationController extends Controller
     public function index(Request $request)
     {
         $query = Certification::where('user_id', Auth::id())
-                              ->with(['processedBy']);
+        ->with(['processedBy']);
 
         // Filtros
         if ($request->filled('status')) {
@@ -61,8 +63,8 @@ class CertificationController extends Controller
         return Inertia::render('certifications/Create', [
             'applicationTypes'  => Certification::APPLICATION_TYPES,
             'periods'           => Signature::where('is_active', true)->get(),
-            'cities'            => Certification::CITIES,
-            'provinces'         => Certification::PROVINCES,
+            'provinces'         => Province::orderBy('name')->get(['id', 'name']),
+            'cities'            => [], // Inicialmente vacío, se carga dinámicamente
         ]);
     }
 
@@ -205,15 +207,18 @@ class CertificationController extends Controller
                 'current_age' => $currentAge,
                 'is_over_65' => $currentAge && $currentAge >= 65,
             ],
-            'applicationTypes' => Certification::APPLICATION_TYPES,
+            'applicationTypes'  => Certification::APPLICATION_TYPES,
             'periods'           => Signature::where('is_active', true)->get(),
-            'cities' => Certification::CITIES,
-            'provinces' => Certification::PROVINCES,
-            'statusOptions' => Certification::STATUS_OPTIONS,
-            'validationStatusOptions' => Certification::VALIDATION_STATUSES,
-            'canEdit' => true, // Si llegó hasta aquí es porque puede editar
-            'hasCompanyDocs' => $certification->applicationType === 'LEGAL_REPRESENTATIVE' || 
-                            ($certification->applicationType === 'NATURAL_PERSON' && !empty($certification->companyRuc)),
+            'provinces'         => Province::orderBy('name')->get(['id', 'name']),
+            'cities'            => $certification->province ? 
+                City::whereHas('province', function($query) use ($certification) {
+                    $query->where('name', $certification->province);
+                })->orderBy('name')->get(['id', 'name']) : [],
+            'statusOptions'     => Certification::STATUS_OPTIONS,
+            'validationStatusOptions'   => Certification::VALIDATION_STATUSES,
+            'canEdit'                   => true, // Si llegó hasta aquí es porque puede editar
+            'hasCompanyDocs'            => $certification->applicationType === 'LEGAL_REPRESENTATIVE' || 
+                ($certification->applicationType === 'NATURAL_PERSON' && !empty($certification->companyRuc)),
         ]);
     }
 
@@ -437,6 +442,34 @@ class CertificationController extends Controller
         $fileName = basename($path);
         
         return response()->download($fullPath, $fileName);
+    }
+
+    /**
+     * API para obtener ciudades por provincia
+     */
+    public function getCitiesByProvince(Request $request, $provinceId): JsonResponse
+    {
+        try {
+            $cities = City::where('province_id', $provinceId)
+                         ->orderBy('name')
+                         ->get(['id', 'name']);
+
+            return response()->json([
+                'success' => true,
+                'cities' => $cities
+            ]);
+
+        } catch (\Throwable $th) {
+            Log::channel('debugging')->error('Error al obtener ciudades por provincia: '.$th->getMessage(), [
+                'province_id' => $provinceId,
+                'error' => $th->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al cargar las ciudades'
+            ], 500);
+        }
     }
 
     private function validateRole(Certification $certification): void

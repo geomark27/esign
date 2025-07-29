@@ -24,7 +24,7 @@ import {
     CollapsibleTrigger 
 } from '@/components/ui/collapsible';
 import { type NavItem } from '@/types';
-import { BookOpen, Folder, LayoutGrid, Users, Shield, Menu, Settings, LogOut, ChevronDown, Book, List, Receipt, ChevronsUpDown, Banknote, ReceiptCent, ReceiptCentIcon, Handshake, File, DoorClosed, FileLock, Lock, ListCheck, Pen, PenLine, UserCheck, UserCog2, Users2, Users2Icon, LockKeyholeIcon, ListTodo, PenBoxIcon } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Users, Shield, Menu, Settings, LogOut, ChevronDown, Book, List, Receipt, ChevronsUpDown, Banknote, ReceiptCent, ReceiptCentIcon, Handshake, File, DoorClosed, FileLock, Lock, ListCheck, Pen, PenLine, UserCheck, UserCog2, Users2, Users2Icon, LockKeyholeIcon, ListTodo, PenBoxIcon, Map } from 'lucide-react';
 import { route } from 'ziggy-js';
 import { cn } from '@/lib/utils';
 import AppLogo from './app-logo';
@@ -115,6 +115,11 @@ export function AppSidebar() {
             title: 'Certificados',
             href: '/user/certifications',
             icon: BookOpen,
+        },
+        {
+            title: 'Sectores',
+            href: '/user/sectors',
+            icon: Map,
         },
     ];
 

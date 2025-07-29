@@ -9,6 +9,7 @@ use App\Http\Controllers\Payment\PaymentController;
 use App\Http\Controllers\Settings\GeneralController;
 use App\Http\Controllers\User\DashboardController as UserDashboardController;
 use App\Http\Controllers\User\CertificationController;
+use App\Http\Controllers\User\SectorController;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -97,6 +98,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         // Descarga segura de archivos
         Route::get('download', [CertificationController::class, 'downloadFile'])->name('download');
+        
+        // API para obtener ciudades por provincia
+        Route::get('api/cities-by-province/{province}', [CertificationController::class, 'getCitiesByProvince'])->name('api.cities-by-province');
 
         // Certificaciones - rutas adicionales para FirmaSegura
         Route::post('certifications/{certification}/submit', [CertificationController::class, 'submit'])->name('certifications.submit');
@@ -105,6 +109,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('certifications/payments/store', [PaymentController::class, 'store'])->name('certifications.payments.store');
         Route::delete('certifications/payments/{certification_id}/destroy', [PaymentController::class, 'destroy'])->name('certifications.payments.destroy');
+
+        // Sectores (Ciudades)
+        Route::get('sectors', [SectorController::class, 'index'])->name('sectors.index');
+        Route::get('sectors/create', [SectorController::class, 'create'])->name('sectors.create');
+        Route::post('sectors', [SectorController::class, 'store'])->name('sectors.store');
+        Route::get('sectors/{sector}/edit', [SectorController::class, 'edit'])->name('sectors.edit');
+        Route::put('sectors/{sector}', [SectorController::class, 'update'])->name('sectors.update');
+        Route::delete('sectors/{sector}', [SectorController::class, 'destroy'])->name('sectors.destroy');
     });
 
     Route::prefix('settings')->name('settings.')->group(function () {
